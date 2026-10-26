@@ -1,0 +1,96 @@
+# Builds the installable programs on GitHub's machines.
+#   - Every push to main and every pull request: tests on Windows and Linux.
+#   - "Run workflow" (Actions tab) or a version tag (v1.0, v1.1, ...): also packs the Windows
+#     installer and the Linux archive. For a tag they are attached to a GitHub Release.
+name: Build
+
+on:
+  push:
+    branches: [main]
+    tags: ["v*"]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  windows:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+      - name: Install libraries
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install -r requirements.txt -r packaging/requirements-build.txt
+      - name: Test
+        env:
+          QT_QPA_PLATFORM: offscreen
+        run: python -m pytest -q
+      - name: Pack the program
+        if: github.event_name != 'push' || startsWith(github.ref, 'refs/tags/')
+        run: python -m PyInstaller --noconfirm --clean --distpath dist --workpath build/pyinstaller packaging/voice_pen_plotter.spec
+      - name: Self-test the packed program
+        if: github.event_name != 'push' || startsWith(github.ref, 'refs/tags/')
+        run: |
+          $p = Start-Process dist\VoicePenPlotter\VoicePenPlotter.exe -ArgumentList "--self-test=selftest.txt" -Wait -PassThru
+          Get-Content selftest.txt
+          if ($p.ExitCode -ne 0) { exit 1 }
+      - name: Make the installer
+        if: github.event_name != 'push' || startsWith(github.ref, 'refs/tags/')
+        run: |
+          if (-not (Get-Command iscc -ErrorAction SilentlyContinue)) { choco install innosetup -y --no-progress }
+          $iscc = (Get-Command iscc -ErrorAction SilentlyContinue).Source
+          if (-not $iscc) { $iscc = "${env:ProgramFiles(x86)}\Inno Setup 6\ISCC.exe" }
+          & $iscc packaging/installer.iss
+      - uses: actions/upload-artifact@v4
+        if: github.event_name != 'push' || startsWith(github.ref, 'refs/tags/')
+        with:
+          name: VoicePenPlotter-Setup-Windows
+          path: dist/VoicePenPlotter-Setup-*.exe
+      - name: Attach to the release
+        if: startsWith(github.ref, 'refs/tags/v')
+        uses: softprops/action-gh-release@v2
+        with:
+          files: dist/VoicePenPlotter-Setup-*.exe
+
+  linux:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+      - name: System libraries (Qt, audio)
+        run: sudo apt-get update && sudo apt-get install -y libegl1 libgl1 libxkbcommon0 libfontconfig1 libdbus-1-3 libportaudio2
+      - name: Install libraries
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install -r requirements.txt -r packaging/requirements-build.txt
+      - name: Test
+        env:
+          QT_QPA_PLATFORM: offscreen
+        run: python -m pytest -q
+      - name: Pack the program
+        if: github.event_name != 'push' || startsWith(github.ref, 'refs/tags/')
+        run: |
+          python -m PyInstaller --noconfirm --clean --distpath dist --workpath build/pyinstaller packaging/voice_pen_plotter.spec
+          cp packaging/install_linux.sh dist/VoicePenPlotter/install.sh
+          cp packaging/icon.png dist/VoicePenPlotter/icon.png
+          dist/VoicePenPlotter/VoicePenPlotter --self-test
+          tar -C dist -czf dist/VoicePenPlotter-1.0-linux-x86_64.tar.gz VoicePenPlotter
+      - uses: actions/upload-artifact@v4
+        if: github.event_name != 'push' || startsWith(github.ref, 'refs/tags/')
+        with:
+          name: VoicePenPlotter-Linux
+          path: dist/VoicePenPlotter-*-linux-x86_64.tar.gz
+      - name: Attach to the release
+        if: startsWith(github.ref, 'refs/tags/v')
+        uses: softprops/action-gh-release@v2
+        with:
+          files: dist/VoicePenPlotter-*-linux-x86_64.tar.gz

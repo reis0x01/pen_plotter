@@ -1,0 +1,78 @@
+{
+  "paper_width": 210.0,
+  "paper_height": 297.0,
+  "safety_margin": 10.0,
+  "usable_travel_x": 280.0,
+  "usable_travel_y": 280.0,
+  "x_positive": "left",
+  "y_positive": "toward",
+  "paper_origin_mpos": [
+    -200.0,
+    -287.0
+  ],
+  "pen_up_z": 3.0,
+  "pen_down_z": -1.0,
+  "z_feed": 300.0,
+  "draw_feed": 1000.0,
+  "travel_feed": 2000.0,
+  "park_x": 10.0,
+  "park_y": 10.0,
+  "jog_steps": [
+    0.1,
+    1.0,
+    10.0
+  ],
+  "jog_feed": 1000.0,
+  "jog_z_feed": 200.0,
+  "font": "futural",
+  "char_height": 7.0,
+  "line_spacing": 1.8,
+  "letter_spacing": 0.0,
+  "margin_left": 15.0,
+  "margin_right": 10.0,
+  "margin_top": 15.0,
+  "margin_bottom": 15.0,
+  "hyphenate_long_words": true,
+  "text_align": "center",
+  "vertical_align": "middle",
+  "port": "/dev/ttyUSB0",
+  "baud": 115200,
+  "stt_language": "tr-TR",
+  "stt_sample_rate": 16000,
+  "stt_max_seconds": 55.0,
+  "ask_to_plot_after_speech": true,
+  "voice_commands": [
+    {
+      "phrase": "new line",
+      "action": "newline"
+    },
+    {
+      "phrase": "stop",
+      "action": "stop"
+    },
+    {
+      "phrase": "pause",
+      "action": "pause"
+    },
+    {
+      "phrase": "resume",
+      "action": "resume"
+    },
+    {
+      "phrase": "yeni sat\u0131r",
+      "action": "newline"
+    },
+    {
+      "phrase": "dur",
+      "action": "stop"
+    },
+    {
+      "phrase": "duraklat",
+      "action": "pause"
+    },
+    {
+      "phrase": "devam et",
+      "action": "resume"
+    }
+  ]
+}
